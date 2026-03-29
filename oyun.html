@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karakterini Patakla!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222; /* Koyu arka plan */
+            font-family: sans-serif;
+            overflow: hidden; /* Taşmaları önle */
+        }
+
+        #oyun-alani {
+            width: 800px;
+            height: 600px;
+            background-color: #3498db; /* Orijinal görseldeki mavi tonu */
+            border: 5px solid #fff;
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+        }
+
+        /* Dövülecek Karakter */
+        #karakter {
+            position: absolute;
+            bottom: 50px; /* Alttan boşluk */
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 90%; /* Alanı aşmasın */
+            max-height: 80%; /* Alanı aşmasın */
+            cursor: pointer;
+            transition: transform 0.1s ease-out; /* Tepki efekti için */
+        }
+
+        /* Patlama/Vuruş Efekti */
+        .efekt {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            pointer-events: none; /* Tıklamayı engelle */
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            border: 10px solid gold;
+            animation: patla 0.3s ease-out forwards;
+        }
+
+        @keyframes patla {
+            0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        /* Skor ve Mesaj Paneli */
+        #skor-paneli {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        /* Sol Taraftaki Buton Alanı (Arayüz) */
+        #buton-alani {
+            position: absolute;
+            left: 20px;
+            top: 100px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .arayuz-butonu {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            border: 2px solid white;
+            cursor: pointer;
+            text-decoration: none; /* Link ise çizgiyi kaldır */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="oyun-alani">
+        <div id="skor-paneli">
+            Vuruş: <span id="skor">0</span><br>
+            <span id="durum"></span>
+        </div>
+
+        <div id="buton-alani">
+            <div class="arayuz-butonu">🤜</div> <div class="arayuz-butonu">🖐️</div> <div class="arayuz-butonu">🦶</div> <div class="arayuz-butonu">🍅</div> </div>
+
+        <img id="karakter" src="" alt="HATA: Lütfen PNG dosyanızı ayarlayın" onerror="resimHata(this)">
+    </div>
+
+    <script>
+        // --- GÖRSEL AYARI ---
+        // Kendi PNG dosyanızın adını buraya yazın (Örn: 'rakip.png')
+        const kendiPngResmim = 'babanın_resmi.png'; 
+        // --------------------
+
+        const karakter = document.getElementById('karakter');
+        const skorSpan = document.getElementById('skor');
+        const durumSpan = document.getElementById('durum');
+        const oyunAlani = document.getElementById('oyun-alani');
+        
+        let skor = 0;
+
+        // Sayfa yüklendiğinde resmi ayarla
+        if (kendiPngResmim && kendiPngResmim !== '') {
+            karakter.src = kendiPngResmim;
+        }
+
+        function resimHata(resimElementi) {
+            console.error("Resim yüklenemedi: " + resimElementi.src);
+            resimElementi.style.backgroundColor = 'red';
+            resimElementi.style.color = 'black';
+            resimElementi.innerHTML = "Hata! Resim yok.<br>JS dosyasını düzenle.";
+        }
+
+        // Karakteri Döveme Fonksiyonu
+        karakter.addEventListener('click', function(e) {
+            // Skoru artır
+            skor++;
+            skorSpan.textContent = skor;
+
+            // Görsel tepki: Hafifçe sarsılma
+            sarsilmaEfekti();
+
+            // Vuruş efekti (patlama) oluştur
+            efektOlustur(e.clientX, e.clientY);
+
+            // Durum mesajı (Süslü olsun)
+            durumMesaji();
+        });
+
+        // Sarsılma efekti için fonksiyon
+        function sarsilmaEfekti() {
+            // Orijinal transformu sakla
+            const originalTransform = karakter.style.transform;
+            
+            // Rastgele hafif sarsılma değerleri
+            const xVal = (Math.random() - 0.5) * 10;
+            const yVal = (Math.random() - 0.5) * 10;
+            const rotateVal = (Math.random() - 0.5) * 5;
+
+            // Uygula (translateX(-50%)'yi korumalıyız)
+            karakter.style.transform = `translateX(-50%) translate(${xVal}px, ${yVal}px) rotate(${rotateVal}deg) scale(1.05)`;
+
+            // Kısa süre sonra eski haline döndür
+            setTimeout(() => {
+                karakter.style.transform = `translateX(-50%) translate(0, 0) rotate(0deg) scale(1)`;
+            }, 100);
+        }
+
+        // Patlama efekti oluşturan fonksiyon
+        function efektOlustur(clientX, clientY) {
+            // Tıklanan yerin oyun alanına göre koordinatlarını hesapla
+            const rect = oyunAlani.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const efekt = document.createElement('div');
+            efekt.className = 'efekt';
+            efekt.style.left = x + 'px';
+            efekt.style.top = y + 'px';
+            
+            oyunAlani.appendChild(efekt);
+
+            // Animasyon bittikten sonra elementi kaldır
+            setTimeout(() => {
+                efekt.remove();
+            }, 300); // animasyon süresi kadar
+        }
+
+        // Komik durum mesajları
+        const mesajlar = [
+            "Güzel yumruktu!",
+            "Ah, acıdı!",
+            "Yetmez, daha sert!",
+            "Devam et!",
+            "Bir tane de yüzüne!",
+            "Skorun artıyor!",
+            "Yorulmadın mı?"
+        ];
+
+        function durumMesaji() {
+            if (skor % 10 === 0) { // Her 10 vuruşta bir mesaj
+                const rastgeleMesaj = mesajlar[Math.floor(Math.random() * mesajlar.length)];
+                durumSpan.textContent = rastgeleMesaj;
+                durumSpan.style.color = "gold";
+                setTimeout(() => {
+                    durumSpan.textContent = ""; // 1 saniye sonra temizle
+                }, 1500);
+            }
+        }
+
+    </script>
+</body>
+</html>
